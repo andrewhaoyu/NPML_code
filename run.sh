@@ -1,0 +1,1 @@
+Rscript /home/student/hzhang1/R/project_Tom/logistic_regression/simulation2/logistic_regression.R $1 $2 $3 $4
