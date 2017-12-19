@@ -24,7 +24,7 @@ source("./code/geometric_fun.R")
 set.seed(123)
 library(boot)
 library(ggplot2)
-library(ggthemes)
+#library(ggthemes)
 library(dplyr)
 Rboot <- 300
 M <- 1
