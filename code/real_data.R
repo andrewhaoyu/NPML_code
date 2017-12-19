@@ -1,4 +1,6 @@
+
 library(sas7bdat)
+setwd('/users/hzhang1/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
 
@@ -133,8 +135,8 @@ Betaresult <- paste0(BetaEstRound,"(",BetaEstLow,"-",BetaEstHigh,")")
 
 realdataresult <- data.frame(Strat=Stratresult,Pooled=Pooledresult,
                              NPML=NPMLresult,Beta=Betaresult)
-
-save(realdataresult,file="")
+realdataresult <- NULL
+save(realdataresult,file="./result/realdataresult.Rdata")
 
 
 
