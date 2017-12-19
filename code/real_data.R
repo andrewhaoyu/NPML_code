@@ -157,7 +157,7 @@ save(realdataresult,file="./result/realdataresult.Rdata")
 #   #theme_Publication()
 #   labs(x="Time to Heal(days)", y="# of patients") +
 #   scale_x_continuous(breaks=seq(0,1000, by=50)) +
-#   scale_y_continuous(labels=comma,breaks = seq(0,30,by=5))+ 
+#   scale_y_continuous(labels=comma,breaks = seq(0,30,by=5))+
 #   geom_hline(yintercept=0, size=0.4, color="black")
 # 
 # 
