@@ -45,7 +45,7 @@ for(i in 1:Rboot){
   ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
   N <- Nt[ind]
   cend <- cen[ind]
-  NPMLEst_boot[i] <- NPMLEstimateFunction(N,cend)
+  NPMLEst_boot[i] <- NPMLEstimateFunction(N,cend)[[3]]
 }
 
 
