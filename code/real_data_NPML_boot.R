@@ -15,7 +15,7 @@ ID <- sort(ID)
 obs <- rep(0,n.sub)
 N <- rep(0,n.sub)
 for(i in 1:n.sub){
-  print(i)
+  #print(i)
   idx <- which(data$ID==ID[i])
   obs[i] <- max(data[idx,]$preg,na.rm=T)
   N[i] <- max(data[idx,]$method5,na.rm=T)
