@@ -1,6 +1,6 @@
 
-StratEstimateFunction <- function(N,d,cen) {
-  NN <- N[d] #set d as parameters for convenience to use {boot} package later
+StratEstimateFunction <- function(N,cen) {
+  NN <- N #set d as parameters for convenience to use {boot} package later
   cend <- cen[d]
   MLE <- rep(0,length(NN))
   MLE[cend==1] <- 1/NN[cend==1]
@@ -23,10 +23,7 @@ PooledEstimateFunction <- function(N,d,cen) {
 
 
 #this recursion function is used to replace the loop inside NPML function
-recursion <- function (pp, UU, NN, Y,cend) {
-  ww <- pp*(1-UU)^(NN-Y) * UU^(Y*cend)
-  return(ww)
-}
+
 #this is the function for the NPML estimate
 
 

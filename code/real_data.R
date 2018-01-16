@@ -1,4 +1,3 @@
-
 library(sas7bdat)
 setwd('/users/hzhang1/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
@@ -8,64 +7,78 @@ n.sub <- length(table(data$ID))
 ID <- unique(data$ID)
 ID <- sort(ID)
 
-cen <- rep(0,n.sub)
+obs <- rep(0,n.sub)
 N <- rep(0,n.sub)
 for(i in 1:n.sub){
-print(i)
-    idx <- which(data$ID==ID[i])
-  cen[i] <- max(data[idx,]$preg,na.rm=T)
+  print(i)
+  idx <- which(data$ID==ID[i])
+  obs[i] <- max(data[idx,]$preg,na.rm=T)
   N[i] <- max(data[idx,]$method5,na.rm=T)
   
 }
 
-censor.rate <- sum(cen)/length(cen)
+table(obs,N)
+idx.new <- which(N!=0)
+obs.new <- obs[idx.new]
+N.new <- N[idx.new]
 
-source("./code/geometric_fun.R")
-set.seed(123)
-library(boot)
-library(ggplot2)
-#library(ggthemes)
-library(dplyr)
-Rboot <- 300
+
+N <- N.new
+cen <- obs.new
+censor.rate <- sum(cen)/length(cen)
+library(devtools)
+install_github("andrewhaoyu/PAV")
+library(PAV)
+
+NPML.estimate <- NPMLEstimateFunction(N,cen)
+
+
+#set.seed(123)
+#Rboot <- 300
 M <- 1
-K <- n.sub
-#Nt <- data[data[,2]=='H',1]
-#data.uncen <- data.frame(days=Nt)
+
 Nt <- N
-cen <- cen
-StratEst <- StratEstimateFunction(Nt,c(1:K),cen)
-PooledEst <- PooledEstimateFunction(Nt,c(1:K),cen)
-NPMLEst <- NPMLEstimateFunction_mean(Nt,c(1:K),cen)
+
+StratEst <- StratEstimateFunction(Nt,cen)
+PooledEst <- PooledEstimateFunction(Nt,cen)
+NPMLEst <- NPMLEstimateFunction(N,cen)[[3]]
 N <- Nt
 
-n <- 100
-begin_point1 <- runif(n,0.005,0.2)
-begin_point2 <- runif(n,100,300)
-begin_point <- cbind(begin_point1,begin_point2)
-try_result <- rep(0,n)
-for(i in 1:n){
-  fit <-  optim(par = begin_point[i,],fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.8,10000),method="L-BFGS-B",control=list(fnscale=-1))
-  try_result[i] <- BetaGeometricLikehood(fit$par)
-  
-}
-idx <- which.max(try_result)
-begin <- begin_point[idx,]
+# n <- 5000
+# begin_point1 <- runif(n,0.005,0.9)
+# begin_point2 <- runif(n,1,500)
+# begin_point <- cbind(begin_point1,begin_point2)
+# try_result <- rep(0,n)
+# for(i in 1:n){
+#   fit <-  optim(par = begin_point[i,],fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.9,10000),method="L-BFGS-B",control=list(fnscale=-1))
+#   try_result[i] <- BetaGeometricLikehood(fit$par)
+#   
+# }
+# idx <- which.max(try_result)
+begin <- c(0.3804882,20.0296849)
 
-BetaEst <- ParaBetaEstimateFunction(Nt)
+
+fit <-  optim(par = begin,fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.9995,10000),method="L-BFGS-B",control=list(fnscale=-1))
+BetaEst <- fit$par[1]
+like <- BetaGeometricLikehood(fit$par)
+
+
+
 bootdata <- data.frame(N=N,cen=cen)
 # NPMLEst_boot <- boot(data.frame(N=N,cen=cen),NPMLEstimateFunction_mean,Rboot)
 # PooledEst_boot <- boot(N,PooledEstimateFunction,Rboot)
 # StratEst_boot <- boot(N,StratEstimateFunction,Rboot)
-
-NPMLEst_boot <- rep(0,Rboot)
-
-for(i in 1:Rboot){
-  print(i)
-  ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
-  N <- Nt[ind]
-  cend <- cen[ind]
-  NPMLEst_boot[i] <- NPMLEstimateFunction_mean(N,c(1:K),cend)
-}
+set.seed(123)
+Rboot <- 10000
+# NPMLEst_boot <- rep(0,Rboot)
+# 
+# for(i in 1:Rboot){
+#   print(i)
+#   ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
+#   N <- Nt[ind]
+#   cend <- cen[ind]
+#   NPMLEst_boot[i] <- NPMLEstimateFunction_mean(N,c(1:K),cend)
+# }
 
 PooledEst_boot <- rep(0,Rboot)
 
@@ -74,7 +87,7 @@ for(i in 1:Rboot){
   ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
   N <- Nt[ind]
   cend <- cen[ind]
-  PooledEst_boot[i] <- PooledEstimateFunction(N,c(1:K),cend)
+  PooledEst_boot[i] <- PooledEstimateFunction(N,cend)
 }
 
 StratEst_boot <- rep(0,Rboot)
@@ -84,9 +97,9 @@ for(i in 1:Rboot){
   ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
   N <- Nt[ind]
   cend <- cen[ind]
-  StratEst_boot[i] <- StratEstimateFunction(N,c(1:K),cend)
+  StratEst_boot[i] <- StratEstimateFunction(N,cend)
 }
-Rboot <- 300
+#Rboot <- 300
 BetaEst_boot <- rep(0,Rboot)
 
 cen_original <- cen
@@ -95,18 +108,7 @@ for(i in 1:Rboot){
   ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
   N <- Nt[ind]
   cen <- cen_original[ind]
-  n <- 100
-  begin_point1 <- runif(n,0.005,0.2)
-  begin_point2 <- runif(n,100,300)
-  begin_point <- cbind(begin_point1,begin_point2)
-  try_result <- rep(0,n)
-  for(j in 1:n){
-    fit <-  optim(par = begin_point[j,],fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.8,10000),method="L-BFGS-B",control=list(fnscale=-1))
-    try_result[j] <- BetaGeometricLikehood(fit$par)
-    
-  }
-  idx <- which.max(try_result)
-  begin <- begin_point[idx,]
+
   
   BetaEst_boot[i] <- ParaBetaEstimateFunction(N)
   
@@ -114,19 +116,19 @@ for(i in 1:Rboot){
 cen <- cen_original
 #BetaEst_boot_f <- BetaEst_boot[BetaEst_boot<0.1]
 
-places <- 0
-NPMLEstRound <- round(NPMLEst*10^4,places)
-StratEstRound <- round(StratEst*10^4,places)
-PooledEstRound <- round(PooledEst*10^4,places)
-BetaEstRound <- round(BetaEst*10^4,places)
-NPMLEstLow <- round(quantile(NPMLEst_boot,0.025)*10^4,places)
-NPMLEstHigh <- round(quantile(NPMLEst_boot,0.975)*10^4,places)
-StratEstLow <- round(quantile(StratEst_boot,0.025)*10^4,places)
-StratEstHigh <- round(quantile(StratEst_boot,0.975)*10^4,places)
-PooledEstLow <- round(quantile(PooledEst_boot,0.025)*10^4,places)
-PooledEstHigh <- round(quantile(PooledEst_boot,0.975)*10^4,places)
-BetaEstLow <- round(quantile(BetaEst_boot,0.025)*10^4,places)
-BetaEstHigh <- round(quantile(BetaEst_boot,0.975)*10^4,places)
+places <- 3
+NPMLEstRound <- round(NPMLEst,places)
+StratEstRound <- round(StratEst,places)
+PooledEstRound <- round(PooledEst,places)
+BetaEstRound <- round(BetaEst,places)
+NPMLEstLow <- round(quantile(NPMLEst_boot,0.025),places)
+NPMLEstHigh <- round(quantile(NPMLEst_boot,0.975),places)
+StratEstLow <- round(quantile(StratEst_boot,0.025),places)
+StratEstHigh <- round(quantile(StratEst_boot,0.975),places)
+PooledEstLow <- round(quantile(PooledEst_boot,0.025),places)
+PooledEstHigh <- round(quantile(PooledEst_boot,0.975),places)
+BetaEstLow <- round(quantile(BetaEst_boot,0.025),places)
+BetaEstHigh <- round(quantile(BetaEst_boot,0.975),places)
 
 NPMLresult <- paste0(NPMLEstRound,"(",NPMLEstLow,"-",NPMLEstHigh,")")
 Pooledresult <- paste0(PooledEstRound,"(",PooledEstLow,"-",PooledEstHigh,")")
