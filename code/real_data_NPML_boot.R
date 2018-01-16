@@ -1,3 +1,4 @@
+rm(list=ls())
 args <- commandArgs(trailingOnly = T)
 i1 <- as.numeric(args[[1]])
 print(i1)
