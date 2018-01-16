@@ -1,6 +1,8 @@
 args <- commandArgs(trailingOnly = T)
 i1 <- as.numeric(args[[1]])
+print(i1)
 set.seed(i1)
+
 library(sas7bdat)
 setwd('/users/hzhang1/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
