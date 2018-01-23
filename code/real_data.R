@@ -25,6 +25,29 @@ N.new <- N[idx.new]
 
 N <- N.new
 cen <- obs.new
+
+new.data <- as.data.frame(table(N,cen))
+
+risk <- rep(0,max(N))
+
+for(i in 1:max(N)){
+  if(i==1){
+    idx <- which(new.data[,1]==i)
+    remove <- sum(new.data[idx,3])
+    risk[i] <- length(N)
+  }else{
+    idx <- which(new.data[,1]==i)
+    remove <- sum(new.data[idx,3])
+    risk[i] <- risk[i-1]-remove  
+  }
+}
+
+
+sur.data <- cbind(table(N,cen),risk)
+
+K.estimate <- sur.data[,2]/risk
+
+
 censor.rate <- sum(cen)/length(cen)
 library(devtools)
 install_github("andrewhaoyu/PAV")

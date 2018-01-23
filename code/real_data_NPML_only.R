@@ -33,6 +33,55 @@ library(PAV)
 NPML.estimate <- NPMLEstimateFunction(N,cen)
 UU <- NPML.estimate[[1]]
 pp <- NPML.estimate[[2]]
+mean.estimate <- sum(UU%*%pp)
+var.estimate <- sum((UU-mean.estimate)^2%*%pp)
+
+M <- mean.estimate*(1-mean.estimate)/var.estimate-1
+
+
+
+
+
+
+
+
+
+
+
+mean.estimate <- 0.175
+M <- 19.58
+alpha <- mean.estimate*M
+beta <- (1-mean.estimate)*M
+
+x <- seq(0,1,0.0001)
+
+y <- dbeta(x,alpha,beta)
+
+plot(x,y,type='l',main="beta distribution density estimate")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 preg.probability.est <- NPML.estimate[[3]]
 
 UU.cut <- seq(0,1,0.0001)
