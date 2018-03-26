@@ -2,13 +2,84 @@ library(sas7bdat)
 setwd('/users/hzhang1/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
-
+library(data.table)
+data.sum <- as.data.frame(fread('./data/LIFE_DATA/summary_table.csv',header=T))
+data.sum <- data.sum[-1,]
+data.sum[,4] <- as.numeric(data.sum[,4])
+data.sum[,3] <- as.numeric(data.sum[,3])
+data.sum[,2] <- as.numeric(data.sum[,2])
+data.sum$still_in_study <- data.sum[,4]-data.sum[,3]-data.sum[,2]
 n.sub <- length(table(data$ID))
+data.clean <- data.sum[,c(1,2,3,6)]
+data.m <- melt(data.clean,id="Number of menstrual cycles")
+
 ID <- unique(data$ID)
 ID <- sort(ID)
 
 obs <- rep(0,n.sub)
 N <- rep(0,n.sub)
+for(i in 1:n.sub){
+  print(i)
+  idx <- which(data$ID==ID[i])
+  obs[i] <- max(data[idx,]$preg,na.rm=T)
+  N[i] <- max(data[idx,]$method5,na.rm=T)
+  
+}
+data.temp <- cbind(ID,obs,N)
+
+data.com <- merge(data.temp,data.baseline,by.x="ID",by.y="ID")
+library(tidyverse)
+data.com <- data.com %>% mutate(
+  age_average = (Age_m+Age_f)/2,
+  age_diff = abs(Age_m-Age_f)/2
+)
+
+###############take out the first cycle
+idx <- which(data.com$N!=0)
+data.clean <- data.com[idx,]
+dim(data.clean)
+n.couple <- nrow(data.clean)
+n.cycle <- sum(data.clean$N)
+Y <- rep(0,n.cycle)
+age_averge.cycle <- rep(0,n.cycle)
+age_diff.cycle <- rep(0,n.cycle)
+ID.cycle <- rep(0,n.cycle)
+temp <- 0
+for(i in 1:n.couple){
+  print(i)
+  if(data.clean$obs[i]==1){
+    Y[temp] = 1
+  }
+  age_averge.cycle[temp+(1:data.clean$N[i])] <- data.clean$age_average[i]
+  age_diff.cycle[temp+(1:data.clean$N[i])] <- data.clean$age_diff[i]
+  ID.cycle[temp+(1:data.clean$N[i])] <- data.clean$ID[i]
+  temp <- temp+data.clean$N[i]
+}
+model.logistic <- glm(Y~age_averge.cycle+age_diff.cycle)
+summary(model.logistic)
+confint(model.logistic)
+
+library(lme4)
+model.mix.logistic <- glmer(Y~(1|ID.cycle)+age_averge.cycle+age_diff.cycle,family = binomial)
+summary(model.mix.logistic)
+confint(model.mix.logistic)
+
+
+
+
+
+# idx.2 <- which(data.com$obs==1)
+# data.com.obs <- data.com[idx.2,]
+# 
+# tol <- 1e-07
+# maxit <- 500
+# 
+# standard_logistic(data.com$N,cbind(data.com$age_average,data.com$age_diff),param.start,tol,maxit)
+
+
+NPML_logistic_function(data.com$N,cbind(data.com$age_average,data.com$age_diff),tol,maxit,K,data.com$obs)
+
+
 for(i in 1:n.sub){
   print(i)
   idx <- which(data$ID==ID[i])

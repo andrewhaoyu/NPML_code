@@ -18,6 +18,11 @@ for(i in 1:n.sub){
 }
 
 table(obs,N)
+total.cycles <- 0 
+for(i in 1:N)
+
+
+
 idx.new <- which(N!=0)
 obs.new <- obs[idx.new]
 N.new <- N[idx.new]
