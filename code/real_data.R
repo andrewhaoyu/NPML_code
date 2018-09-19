@@ -1,5 +1,5 @@
 library(sas7bdat)
-setwd('/users/hzhang1/mixture_approach')
+setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
 library(data.table)
@@ -9,10 +9,26 @@ data.sum[,4] <- as.numeric(data.sum[,4])
 data.sum[,3] <- as.numeric(data.sum[,3])
 data.sum[,2] <- as.numeric(data.sum[,2])
 data.sum$still_in_study <- data.sum[,4]-data.sum[,3]-data.sum[,2]
+colnames(data.sum)[6] <- "Still in study"
 n.sub <- length(table(data$ID))
 data.clean <- data.sum[,c(1,2,3,6)]
 data.m <- melt(data.clean,id="Number of menstrual cycles")
-
+colnames(data.m)[1] <- "nmc"
+colnames(data.m)[2] <- "Current_status"
+library(ggplot2)
+png("./data/LIFE_DATA/summary_plot.png",height=6,width=11,units="cm",
+    res=300,pointsize=10)
+ggplot(data=data.m, aes(x=nmc, y=value, fill=Current_status)) +
+  geom_bar(stat="identity")+
+ # geom_text(aes(y=label_ypos, label=len), vjust=1.6, 
+  #          color="white", size=3.5)+
+  #scale_fill_brewer(palette="Paired")+
+  theme_minimal()+
+  scale_x_continuous(breaks=seq(1,17,2))+
+  ggtitle("LIFE study summary")+
+  xlab("Number of menstrucal cycle")+
+  ylab("Number of people")
+dev.off()
 ID <- unique(data$ID)
 ID <- sort(ID)
 
@@ -29,12 +45,14 @@ data.temp <- cbind(ID,obs,N)
 
 data.com <- merge(data.temp,data.baseline,by.x="ID",by.y="ID")
 library(tidyverse)
+library(dplyr)
 data.com <- data.com %>% mutate(
   age_average = (Age_m+Age_f)/2,
   age_diff = abs(Age_m-Age_f)/2
 )
 
-###############take out the first cycle
+###############take out the first half cycle
+
 idx <- which(data.com$N!=0)
 data.clean <- data.com[idx,]
 dim(data.clean)
@@ -55,29 +73,32 @@ for(i in 1:n.couple){
   ID.cycle[temp+(1:data.clean$N[i])] <- data.clean$ID[i]
   temp <- temp+data.clean$N[i]
 }
+
+
+
+
+###############logistic regression adjusting for age average and age difference
 model.logistic <- glm(Y~age_averge.cycle+age_diff.cycle)
 summary(model.logistic)
 confint(model.logistic)
-
+##############mixed effect logistic regression allowing for sample difference
 library(lme4)
 model.mix.logistic <- glmer(Y~(1|ID.cycle)+age_averge.cycle+age_diff.cycle,family = binomial)
 summary(model.mix.logistic)
 confint(model.mix.logistic)
+#############NPML model
 
 
 
 
 
-# idx.2 <- which(data.com$obs==1)
-# data.com.obs <- data.com[idx.2,]
-# 
-# tol <- 1e-07
-# maxit <- 500
-# 
-# standard_logistic(data.com$N,cbind(data.com$age_average,data.com$age_diff),param.start,tol,maxit)
 
 
-NPML_logistic_function(data.com$N,cbind(data.com$age_average,data.com$age_diff),tol,maxit,K,data.com$obs)
+
+
+
+
+##############original estimate without any confounder adjustment
 
 
 for(i in 1:n.sub){
@@ -87,7 +108,7 @@ for(i in 1:n.sub){
   N[i] <- max(data[idx,]$method5,na.rm=T)
   
 }
-
+###########take out people with no complete menstrcucal cycle
 table(obs,N)
 idx.new <- which(N!=0)
 obs.new <- obs[idx.new]
@@ -96,7 +117,9 @@ N.new <- N[idx.new]
 
 N <- N.new
 cen <- obs.new
-
+#################new data to analyze (all people with complete menstrual cycle)
+#################N is the number of menstrual cycle
+#################cen 1 represents pregnant, 0 represents dropped out of study
 new.data <- as.data.frame(table(N,cen))
 
 risk <- rep(0,max(N))
@@ -124,19 +147,39 @@ library(devtools)
 install_github("andrewhaoyu/PAV")
 library(PAV)
 
+
+M <- 1
+Nt <- N
+
+################Stratified estimate with no covariates adjustment
+StratEst <- StratEstimateFunction(Nt,cen)
+################Pooled estimate with no covariates adjustment
+PooledEst <- PooledEstimateFunction(Nt,cen)
+################NPML estimate with no covariates adjustment
 NPML.estimate <- NPMLEstimateFunction(N,cen)
+NPMLEst <- NPML.estimate[[3]]
+N <- Nt
+###############beta prior estimate
+begin <- c(0.3804882,20.0296849)
+
+
+fit <-  optim(par = begin,fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.9995,10000),method="L-BFGS-B",control=list(fnscale=-1))
+BetaEst <- fit$par[1]
+like <- BetaGeometricLikehood(fit$par)
+
+
+
+
+
+
+
+
+
+
 
 
 #set.seed(123)
 #Rboot <- 300
-M <- 1
-
-Nt <- N
-
-StratEst <- StratEstimateFunction(Nt,cen)
-PooledEst <- PooledEstimateFunction(Nt,cen)
-NPMLEst <- NPMLEstimateFunction(N,cen)[[3]]
-N <- Nt
 
 # n <- 5000
 # begin_point1 <- runif(n,0.005,0.9)
@@ -149,15 +192,6 @@ N <- Nt
 #   
 # }
 # idx <- which.max(try_result)
-begin <- c(0.3804882,20.0296849)
-
-
-fit <-  optim(par = begin,fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.9995,10000),method="L-BFGS-B",control=list(fnscale=-1))
-BetaEst <- fit$par[1]
-like <- BetaGeometricLikehood(fit$par)
-
-
-
 bootdata <- data.frame(N=N,cen=cen)
 # NPMLEst_boot <- boot(data.frame(N=N,cen=cen),NPMLEstimateFunction_mean,Rboot)
 # PooledEst_boot <- boot(N,PooledEstimateFunction,Rboot)

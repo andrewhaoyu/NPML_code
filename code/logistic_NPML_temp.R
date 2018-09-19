@@ -6,10 +6,6 @@ library(car)
 
 
 ###E step calculation function
-###let i represent person
-###let j represent the population
-###E_step_pp calculate the pr(N_i|Z_j) = (1-p_j)^(N_i-1)*(1-p_j)
-
 cppFunction('NumericMatrix E_step_pp(NumericVector uu,double b,NumericVector x,NumericVector N){
             int KK = N.size();
             NumericMatrix pp(KK,KK);
@@ -20,8 +16,6 @@ cppFunction('NumericMatrix E_step_pp(NumericVector uu,double b,NumericVector x,N
             }
             return(pp);
             }')
-######### E_step_ww perform the bayesian rule
-######### Pr(Z_j|N_i) = Pr(N_i|Z_j)*Pr(Z_j)/(sum_j Pr(N_i|Z_j)*Pr(Z_j))
 cppFunction('NumericMatrix E_step_ww(NumericMatrix pp, NumericVector w){
             int KK= w.size();
             NumericMatrix ww(KK,KK);

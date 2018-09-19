@@ -1,8 +1,8 @@
 library(sas7bdat)
-setwd('/users/hzhang1/mixture_approach')
+setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
-
+##############clean the data and get everyone's pregnancy, censored, and menstrucal cycle
 n.sub <- length(table(data$ID))
 ID <- unique(data$ID)
 ID <- sort(ID)
