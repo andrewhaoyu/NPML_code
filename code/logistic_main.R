@@ -5,8 +5,8 @@ i2 <- as.numeric(commanarg[2])
 i3 <- as.numeric(commanarg[3])
 i4 <- as.numeric(commanarg[4])
 # method function ---------------------------------------------------------
-source("logistic_support.R")
-source("logistic_NPML.R")
+source("./code/logistic_support.R")
+source("./code/logistic_NPML.R")
 R <- 400
 observation=1
 K_vector <- c(16,32,48,64,80,96,112)

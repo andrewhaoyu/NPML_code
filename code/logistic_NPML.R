@@ -43,50 +43,74 @@ cppFunction('NumericMatrix E_step_ww(NumericMatrix pp, NumericVector w){
 #### M step calculation function
 gr_u <- function(u,N,ww_vec,b,x,K,observation){
   sum <- 0
-  for(l in 1:observation){
-    N_temp <- N[seq(l,K*observation,observation)]
-    x_temp <- x[seq(l,K*observation,observation)]
-    temp_Qu <- 1-N_temp*logit_inver(u+b*x_temp)
-    sum <- crossprod(temp_Qu,ww_vec)+sum
-  }
+  temp_Qu <- 1-N*logit_inver(u+b%*%x)
+  sum <- crossprod(temp_Qu,ww_vec)
   return(sum^2)
+  #  for(l in 1:observation){
+  #   N_temp <- N[seq(l,K*observation,observation)]
+  #   x_temp <- x[seq(l,K*observation,observation)]
+  #   temp_Qu <- 1-N_temp*logit_inver(u+b*x_temp)
+  #   sum <- crossprod(temp_Qu,ww_vec)+sum
+  # }
+  #return(sum^2)
 }
+
+
 gr_u_d <- function(u,N,ww_vec,b,x,K,observation){
-  sum <- 0
-  sum1 <- 0
-  sum2 <- 0
-  for(l in 1:observation){
-    N_temp <- N[seq(l,K*observation,observation)]
-    x_temp <- x[seq(l,K*observation,observation)]
-    temp_Qu <- 1-N_temp*logit_inver(u+b*x_temp)
-    sum1 <- crossprod(temp_Qu,ww_vec)+sum1
-  }
-  for(l in 1:observation){
-    N_temp <- N[seq(l,K*observation,observation)]
-    x_temp <- x[seq(l,K*observation,observation)]
-    temp_d_Qu <- N_temp*logit_inver(u+b*x_temp)/(1+exp(u+b*x_temp))
-    sum2 <- -crossprod(temp_d_Qu,ww_vec)+sum2
-  }
-  
+  xb <- x%*%b
+  temp_Qu <- 1-N*logit_inver(u+xb)
+  sum1 <- crossprod(temp_Qu,ww_vec)
+  temp_d_Qu <- N*logit_inver(u+xb)/(1+exp(u+xb))
+  sum2 <- -crossprod(temp_d_Qu,ww_vec)
   sum <- 2*sum1*sum2
   
   return(sum)
+  # for(l in 1:observation){
+  #   N_temp <- N[seq(l,K*observation,observation)]
+  #   x_temp <- x[seq(l,K*observation,observation)]
+  #   temp_Qu <- 1-N_temp*logit_inver(u+b*x_temp)
+  #   sum1 <- crossprod(temp_Qu,ww_vec)+sum1
+  # }
+  # for(l in 1:observation){
+  #   N_temp <- N[seq(l,K*observation,observation)]
+  #   x_temp <- x[seq(l,K*observation,observation)]
+  #   temp_d_Qu <- N_temp*logit_inver(u+b*x_temp)/(1+exp(u+b*x_temp))
+  #   sum2 <- -crossprod(temp_d_Qu,ww_vec)+sum2
+  # }
+  # 
+  #sum <- 2*sum1*sum2
+  
+  #return(sum)
 }
 gr_b <- function(uu,N,ww,b,x,K,observation){
   u <- uu
+  p <- length(b)
   t <- 0
-  for(l in 1:observation){
-    N_temp <- N[seq(l,K*observation,observation)]
-    x_temp <- x[seq(l,K*observation,observation)]
+  xb <- x%*%b
+  for(k in 1:p){
     temp_Qb <- matrix(0,K,K)
     for(i in 1:K){
       for(j in 1:K){
-        temp_Qb[i,j] <- x_temp[i]-N_temp[i]*x_temp[i]*logit_inver(u[j]+b*x_temp[i])
+        temp_Qb[i,j] <- x[i,k]-N[i]*x[i,k]*logit_inver(u[j]+xb)
       }
     }
-    t <- sum(temp_Qb*ww)+t
+    t <- sum(temp_Qb*ww)
+    p[k] <- t
   }
-  return(t)
+  
+  return(p)
+  # for(l in 1:observation){
+  #   N_temp <- N[seq(l,K*observation,observation)]
+  #   x_temp <- x[seq(l,K*observation,observation)]
+  #   temp_Qb <- matrix(0,K,K)
+  #   for(i in 1:K){
+  #     for(j in 1:K){
+  #       temp_Qb[i,j] <- x_temp[i]-N_temp[i]*x_temp[i]*logit_inver(u[j]+b*x_temp[i])
+  #     }
+  #   }
+  #   t <- sum(temp_Qb*ww)+t
+  # }
+  # return(t)
 }
 
 gr_b_d <- function(uu,N,ww,b,x,K,observation){
