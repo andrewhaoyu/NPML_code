@@ -1,3 +1,9 @@
+#-------------------------------------------------------------------
+# Update Date: 02/03/2019
+# Goal: using NPML to estimate the per menstrucal cycle pregnancy probablity estimate
+# Author: Haoyu Zhang
+#-------------------------------------------------------------------
+#---------------------------------------#---------------------------------------
 library(sas7bdat)
 setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
@@ -19,7 +25,7 @@ for(i in 1:n.sub){
 
 table(obs,N)
 total.cycles <- 0 
-for(i in 1:N)
+#for(i in 1:N)
 
 
 
@@ -32,7 +38,7 @@ N <- N.new
 cen <- obs.new
 censor.rate <- sum(cen)/length(cen)
 library(devtools)
-install_github("andrewhaoyu/PAV")
+#install_github("andrewhaoyu/PAV")
 library(PAV)
 
 NPML.estimate <- NPMLEstimateFunction(N,cen)
