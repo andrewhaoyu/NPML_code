@@ -1,5 +1,6 @@
 library(sas7bdat)
-setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
+#setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
+setwd('/spin1/users/zhangh24/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
 library(data.table)
@@ -93,7 +94,7 @@ confint(model.mix.logistic)
 #   
 # beta0 = summary(model.logistic)$coefficients[2:3,1]
 #model.NPMLlog <- NPMLLogFun(y=data.clean$N,x=cbind(data.clean$age_average,data.clean$age_diff),uu0,beta0)
-tl <- c(0.01)
+tl <- c(0.005)
 max_likelihood <- rep(0,length(tl))
 beta_result <- matrix(0,length(tl),2)
 mu_result <- matrix(0,length(tl),1)
@@ -106,10 +107,11 @@ for(s in 1:length(tl)){
   x <- as.matrix(x)
   step = 2000
   y_sm = y
-  y_sm[y_sm==1] = y_sm + tl[s]
-  uu_old = seq(min(log((1/y_sm)/(1-1/y_sm))),
-               max(log((1/y_sm)/(1-1/y_sm))),
-               (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
+  y_sm[y_sm==1] = y_sm[y_sm==1] + tl[s]
+   uu_old = seq(min(log((1/y_sm)/(1-1/y_sm))),
+                max(log((1/y_sm)/(1-1/y_sm))),
+                (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
+  #uu_old = log((1/y_sm)/(1-1/y_sm))
   beta_old = summary(model.logistic)$coefficients[2:3,1]
   tol = 1e-04
   n = length(y)
