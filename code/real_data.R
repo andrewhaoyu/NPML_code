@@ -87,14 +87,99 @@ model.mix.logistic <- glmer(Y~(1|ID.cycle)+age_averge.cycle+age_diff.cycle,famil
 summary(model.mix.logistic)
 confint(model.mix.logistic)
 #############NPML model
+# uu0 = seq(summary(model.logistic)$coefficients[1,1]-5,
+#           summary(model.logistic)$coefficients[1,1]+5,
+#           10/(n-1))
+#   
+# beta0 = summary(model.logistic)$coefficients[2:3,1]
+#model.NPMLlog <- NPMLLogFun(y=data.clean$N,x=cbind(data.clean$age_average,data.clean$age_diff),uu0,beta0)
+tl <- c(0.01)
+max_likelihood <- rep(0,length(tl))
+beta_result <- matrix(0,length(tl),2)
+mu_result <- matrix(0,length(tl),1)
+max_step <- rep(0,length(tl))
+#try different starting point
+for(s in 1:length(tl)){
+  n <- nrow(data.clean)
+  y=data.clean$N;
+  x=cbind(data.clean$age_average,data.clean$age_diff);
+  x <- as.matrix(x)
+  step = 2000
+  y_sm = y
+  y_sm[y_sm==1] = y_sm + tl[s]
+  uu_old = seq(min(log((1/y_sm)/(1-1/y_sm))),
+               max(log((1/y_sm)/(1-1/y_sm))),
+               (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
+  beta_old = summary(model.logistic)$coefficients[2:3,1]
+  tol = 1e-04
+  n = length(y)
+  w = rep(1/n,n)
+  #set the step length of gradient decent to aviod unconvergence
+  var.x = apply(x,2,var)
+  alpha_x = rep(1/n,length(beta_old))
+  for(i in 1:length(beta_old)){
+    if(var.x[i]>=1){
+      alpha_x[i] = alpha_x[i]/var.x[i]
+    }
+  }
+  
+  
+  
+  
+  LikeliResult <- rep(0,step)
+  for(l in 1:step){
+    uu_beta_old <- c(uu_old,beta_old)
+    print(uu_beta_old)
+    #print(uu_beta_old)
+    ww = Estep(uu_old,beta_old,x,y,w)
+    LikeliResult[l] <- ObsLikfun(y,x,uu_old,beta_old,w)
+    #rowSums(ww)
+    Mstep_result = Mstep(uu_old,beta_old,x,y,ww,alpha_x)
+    #Mstep_result = Mstep2(uu_old,beta_old,x,y,ww)
+    uu_new = Mstep_result[[1]]
+    beta_new = Mstep_result[[2]]
+    #StepResult[l] = Mstep_result[[3]]
+    uu_beta_new <- c(uu_new,beta_new)
+    error <- max(abs(uu_beta_new-uu_beta_old))
+    if(error<tol){
+      break
+    }
+    uu_old <- uu_new
+    beta_old <- beta_new
+    w = colSums(ww)/sum(ww)
+  }
+  max_likelihood[s] <-   LikeliResult[l]
+  beta_result[s,] <- beta_new
+  mu_result[s] <- crossprod(uu_new,w)
+  max_step[s] = l
+}
 
 
+plot(LikeliResult[1:l])
 
-
-
-
-
-
+Mstep <- function(uu,beta,x,y,ww,alpha_x){
+  uu_old <- uu
+  beta_old <- beta
+  step <- 100
+  n <- length(y)
+  alpha <- 1/n
+  tol <- 0.001
+  for(l in 1:step){
+    
+    uu_beta_old <- c(uu_old,beta_old)
+    #print(uu_beta_old)
+    uu_new = uu_old+alpha*gr_u_fun(uu_old,y,ww,beta_old,x,n)
+    beta_new <- beta_old+(alpha_x/10)*gr_b_fun(uu_new,y,ww,beta_old,x,n)
+    uu_beta_new <- c(uu_new,beta_new)
+    error <- max(abs(uu_beta_new-uu_beta_old))
+    if(error<tol){
+      break
+    }
+    uu_old <- uu_new
+    beta_old <- beta_new
+  }
+  return(list(uu_new,beta_new))
+}
 
 
 

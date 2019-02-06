@@ -39,6 +39,11 @@ standard_logistic_results <- apply(NTL,1,function(y){standard_logistic(y,x,param
 idx_logistic <- standard_logistic_results[3,]
 
 true_u <- mean(u_new)
+uu0 = u_new
+beta0 = beta
+result <- NPMLLogFun(NTL[1,],x,uu0,beta0)
+mean(result[[1]])
+result[[2]]
 NPML_logistic_function(NTL[1,],x,tol,maxit,K,observation)
 NPML_logistic_results <- apply(NTL,1,function(y){NPML_logistic_function(y,x,tol,maxit,K,observation)})
 idx_NPML <- NPML_logistic_results[3,]
