@@ -7,8 +7,8 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = T)
 i1 <- as.numeric(args[[1]])
 library(sas7bdat)
-#setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
-setwd('/spin1/users/zhangh24/mixture_approach')
+setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
+#setwd('/spin1/users/zhangh24/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
 library(data.table)
@@ -24,20 +24,20 @@ data.clean <- data.sum[,c(1,2,3,6)]
 data.m <- melt(data.clean,id="Number of menstrual cycles")
 colnames(data.m)[1] <- "nmc"
 colnames(data.m)[2] <- "Current_status"
-# library(ggplot2)
-# png("./data/LIFE_DATA/summary_plot.png",height=6,width=11,units="cm",
-#     res=300,pointsize=10)
-# ggplot(data=data.m, aes(x=nmc, y=value, fill=Current_status)) +
-#   geom_bar(stat="identity")+
-#  # geom_text(aes(y=label_ypos, label=len), vjust=1.6, 
-#   #          color="white", size=3.5)+
-#   #scale_fill_brewer(palette="Paired")+
-#   theme_minimal()+
-#   scale_x_continuous(breaks=seq(1,17,2))+
-#   ggtitle("LIFE study summary")+
-#   xlab("Number of menstrucal cycle")+
-#   ylab("Number of people")
-# dev.off()
+library(ggplot2)
+png("./data/LIFE_DATA/summary_plot.png",height=6,width=11,units="cm",
+    res=300,pointsize=10)
+ggplot(data=data.m, aes(x=nmc, y=value, fill=Current_status)) +
+  geom_bar(stat="identity")+
+  # geom_text(aes(y=label_ypos, label=len), vjust=1.6, 
+  #          color="white", size=3.5)+
+  #scale_fill_brewer(palette="Paired")+
+  theme_minimal()+
+  scale_x_continuous(breaks=seq(1,17,2))+
+  ggtitle("LIFE study summary")+
+  xlab("Number of menstrucal cycle")+
+  ylab("Number of people")
+dev.off()
 ID <- unique(data$ID)
 ID <- sort(ID)
 
@@ -71,10 +71,147 @@ data.clean$N <- data.com$N+1
 dim(data.clean)
 n.couple <- nrow(data.clean)
 n.cycle <- sum(data.clean$N)
+Y <- rep(0,n.cycle)
+age_averge.cycle <- rep(0,n.cycle)
+age_diff.cycle <- rep(0,n.cycle)
+ID.cycle <- rep(0,n.cycle)
+temp <- 0
+for(i in 1:n.couple){
+  print(i)
+  if(data.clean$obs[i]==1){
+    Y[temp] = 1
+  }
+  age_averge.cycle[temp+(1:data.clean$N[i])] <- data.clean$age_average[i]
+  age_diff.cycle[temp+(1:data.clean$N[i])] <- data.clean$age_diff[i]
+  ID.cycle[temp+(1:data.clean$N[i])] <- data.clean$ID[i]
+  temp <- temp+data.clean$N[i]
+}
 
 
-N <- data.clean$N
-cen <- obs
+
+
+###############logistic regression adjusting for age average and age difference
+model.logistic <- glm(Y~age_averge.cycle+age_diff.cycle)
+summary(model.logistic)
+confint(model.logistic)
+##############mixed effect logistic regression allowing for sample difference
+library(lme4)
+model.mix.logistic <- glmer(Y~(1|ID.cycle)+age_averge.cycle+age_diff.cycle,family = binomial)
+summary(model.mix.logistic)
+confint(model.mix.logistic)
+#############NPML model
+# uu0 = seq(summary(model.logistic)$coefficients[1,1]-5,
+#           summary(model.logistic)$coefficients[1,1]+5,
+#           10/(n-1))
+#   
+# beta0 = summary(model.logistic)$coefficients[2:3,1]
+#model.NPMLlog <- NPMLLogFun(y=data.clean$N,x=cbind(data.clean$age_average,data.clean$age_diff),uu0,beta0)
+tl <- c(0.005)
+max_likelihood <- rep(0,length(tl))
+beta_result <- matrix(0,length(tl),2)
+mu_result <- matrix(0,length(tl),1)
+max_step <- rep(0,length(tl))
+#try different starting point
+for(s in 1:length(tl)){
+  n <- nrow(data.clean)
+  y=data.clean$N;
+  x=cbind(data.clean$age_average,data.clean$age_diff);
+  x <- as.matrix(x)
+  step = 2000
+  y_sm = y
+  y_sm[y_sm==1] = y_sm[y_sm==1] + tl[s]
+  uu_old = seq(min(log((1/y_sm)/(1-1/y_sm))),
+               max(log((1/y_sm)/(1-1/y_sm))),
+               (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
+  #uu_old = log((1/y_sm)/(1-1/y_sm))
+  beta_old = summary(model.logistic)$coefficients[2:3,1]
+  tol = 1e-04
+  n = length(y)
+  w = rep(1/n,n)
+  #set the step length of gradient decent to aviod unconvergence
+  var.x = apply(x,2,var)
+  alpha_x = rep(1/n,length(beta_old))
+  for(i in 1:length(beta_old)){
+    if(var.x[i]>=1){
+      alpha_x[i] = alpha_x[i]/var.x[i]
+    }
+  }
+  
+  LikeliResult <- rep(0,step)
+  StepResult <- rep(0,step)
+  #library(PAV)
+  for(l in 1:step){
+    uu_beta_old <- c(uu_old,beta_old)
+    print(uu_beta_old)
+    #print(uu_beta_old)
+    ww = Estep(uu_old,beta_old,x,y,w,obs)
+    LikeliResult[l] <- ObsLikfun(y,x,uu_old,beta_old,w,obs)
+    #rowSums(ww)
+    Mstep_result = Mstep(uu_old,beta_old,x,y,ww,alpha_x,obs)
+    #Mstep_result = Mstep2(uu_old,beta_old,x,y,ww)
+    uu_new = Mstep_result[[1]]
+    beta_new = Mstep_result[[2]]
+    #StepResult[l] = Mstep_result[[3]]
+    uu_beta_new <- c(uu_new,beta_new)
+    error <- max(abs(uu_beta_new-uu_beta_old))
+    if(error<tol){
+      break
+    }
+    uu_old <- uu_new
+    beta_old <- beta_new
+    w = colSums(ww)/sum(ww)
+  }
+  plot(LikeliResult[1:l])
+}
+
+
+
+
+Mstep <- function(uu,beta,x,y,ww,alpha_x){
+  uu_old <- uu
+  beta_old <- beta
+  step <- 100
+  n <- length(y)
+  alpha <- 1/n
+  tol <- 0.001
+  for(l in 1:step){
+    
+    uu_beta_old <- c(uu_old,beta_old)
+    #print(uu_beta_old)
+    uu_new = uu_old+alpha*gr_u_fun(uu_old,y,ww,beta_old,x,n)
+    beta_new <- beta_old+(alpha_x/10)*gr_b_fun(uu_new,y,ww,beta_old,x,n)
+    uu_beta_new <- c(uu_new,beta_new)
+    error <- max(abs(uu_beta_new-uu_beta_old))
+    if(error<tol){
+      break
+    }
+    uu_old <- uu_new
+    beta_old <- beta_new
+  }
+  return(list(uu_new,beta_new))
+}
+
+
+
+##############original estimate without any confounder adjustment
+
+
+for(i in 1:n.sub){
+  print(i)
+  idx <- which(data$ID==ID[i])
+  obs[i] <- max(data[idx,]$preg,na.rm=T)
+  N[i] <- max(data[idx,]$method5,na.rm=T)
+  
+}
+###########take out people with no complete menstrcucal cycle
+table(obs,N)
+idx.new <- which(N!=0)
+obs.new <- obs[idx.new]
+N.new <- N[idx.new]
+
+
+N <- N.new
+cen <- obs.new
 #################new data to analyze (all people with complete menstrual cycle)
 #################N is the number of menstrual cycle
 #################cen 1 represents pregnant, 0 represents dropped out of study
@@ -101,11 +238,14 @@ K.estimate <- sur.data[,2]/risk
 
 
 censor.rate <- sum(cen)/length(cen)
+library(devtools)
+install_github("andrewhaoyu/PAV")
+library(PAV)
 
 
 M <- 1
 Nt <- N
-library(PAV)
+
 ################Stratified estimate with no covariates adjustment
 StratEst <- StratEstimateFunction(Nt,cen)
 ################Pooled estimate with no covariates adjustment
@@ -115,10 +255,12 @@ NPML.estimate <- NPMLEstimateFunction(N,cen)
 NPMLEst <- NPML.estimate[[3]]
 N <- Nt
 ###############beta prior estimate
-###############best starting point after random sample
-begin <- c(0.1343835,104.2002)
-begin <-  c(5.340596e-03,3.441095e+02)
-BetaEst <- ParaBetaEstimateFunction(N,cen,begin)[[1]][1]
+begin <- c(0.3804882,20.0296849)
+
+
+fit <-  optim(par = begin,fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.9995,10000),method="L-BFGS-B",control=list(fnscale=-1))
+BetaEst <- fit$par[1]
+like <- BetaGeometricLikehood(fit$par)
 
 
 
@@ -127,29 +269,30 @@ BetaEst <- ParaBetaEstimateFunction(N,cen,begin)[[1]][1]
 
 
 
-#test different startpoint for beta prior
-# n <- 15000
-# BetaEst <- rep(0,n)
-# lih <- rep(0,n)
-# M <- rep(0,n)
-# for(i1 in 1:n){
-#   set.seed(i1)
-#   begin <- c(runif(1,0,1),runif(1,0.1,1000))
-#   fit <-  optim(par = begin,fn=function(x){BetaGeometricLikehood(x,N,cen)},gr=function(x){LogL.Derivatives(x,N,cen)},lower=c(0.0005,0.05),upper=c(0.9995,10000),method="L-BFGS-B",control=list(fnscale=-1))
-#   BetaEst[i1] <- fit$par[1]
-#   lih[i1] <- BetaGeometricLikehood(fit$par,N,cen)
-#   M[i1] <- fit$par[2]
+
+
+
+
+#set.seed(123)
+#Rboot <- 300
+
+# n <- 5000
+# begin_point1 <- runif(n,0.005,0.9)
+# begin_point2 <- runif(n,1,500)
+# begin_point <- cbind(begin_point1,begin_point2)
+# try_result <- rep(0,n)
+# for(i in 1:n){
+#   fit <-  optim(par = begin_point[i,],fn=BetaGeometricLikehood,gr=LogL.Derivatives,lower=c(0.0005,0.05),upper=c(0.9,10000),method="L-BFGS-B",control=list(fnscale=-1))
+#   try_result[i] <- BetaGeometricLikehood(fit$par)
+#   
 # }
-# idx <- which.max(lih)
-# lih[idx]
-# BetaEst[idx]
-# M[idx]
-
-
-
-# bootdata <- data.frame(N=N,cen=cen)
-# set.seed(i1)
-# Rboot <- 10
+# idx <- which.max(try_result)
+bootdata <- data.frame(N=N,cen=cen)
+# NPMLEst_boot <- boot(data.frame(N=N,cen=cen),NPMLEstimateFunction_mean,Rboot)
+# PooledEst_boot <- boot(N,PooledEstimateFunction,Rboot)
+# StratEst_boot <- boot(N,StratEstimateFunction,Rboot)
+set.seed(123)
+Rboot <- 10000
 # NPMLEst_boot <- rep(0,Rboot)
 # 
 # for(i in 1:Rboot){
@@ -160,45 +303,40 @@ BetaEst <- ParaBetaEstimateFunction(N,cen,begin)[[1]][1]
 #   NPMLEst_boot[i] <- NPMLEstimateFunction_mean(N,c(1:K),cend)
 # }
 
-PooledEstimateFunctionboot <- function(data,ind){
-  dt <- data[ind,]
-  N <- dt[,1]
-  cen <- dt[,2]
-  return(PooledEstimateFunction(N,cen))
-}
+PooledEst_boot <- rep(0,Rboot)
 
-PooledEst_boot = boot(cbind(N,cen),PooledEstimateFunctionboot,R=10000)
-boot.ci(PooledEst_boot)
-
-
-StratEstimateFunctionboot <- function(data,ind){
-  dt <- data[ind,]
-  N <- dt[,1]
-  cen <- dt[,2]
-  return(StratEstimateFunction(N,cen))
-}
-
-StratEst_boot = boot(cbind(N,cen),StratEstimateFunctionboot,R=10000)
-boot.ci(StratEst_boot)
-
-
-R = 10000
-BetaEst_boot <- rep(0,R)
-begin <- c(0.1343835,104.2002)
-
-#cen_original <- cen
-for(i in 1:R){
+for(i in 1:Rboot){
   print(i)
-  ind <- sample(c(1:length(N)),length(N),replace = T)
-  N_boot <- N[ind]
-  cen_boot <- cen[ind]
+  ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
+  N <- Nt[ind]
+  cend <- cen[ind]
+  PooledEst_boot[i] <- PooledEstimateFunction(N,cend)
+}
 
+StratEst_boot <- rep(0,Rboot)
+
+for(i in 1:Rboot){
+  print(i)
+  ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
+  N <- Nt[ind]
+  cend <- cen[ind]
+  StratEst_boot[i] <- StratEstimateFunction(N,cend)
+}
+#Rboot <- 300
+BetaEst_boot <- rep(0,Rboot)
+
+cen_original <- cen
+for(i in 1:Rboot){
+  print(i)
+  ind <- sample(c(1:length(Nt)),length(Nt),replace = T)
+  N <- Nt[ind]
+  cen <- cen_original[ind]
   
-  BetaEst_boot[i] <- ParaBetaEstimateFunction(N_boot,cen_boot,begin)[[1]][1]
+  
+  BetaEst_boot[i] <- ParaBetaEstimateFunction(N)
   
 }
-quantile(BetaEst_boot,c(0.025,0.975))
-#cen <- cen_original
+cen <- cen_original
 #BetaEst_boot_f <- BetaEst_boot[BetaEst_boot<0.1]
 
 places <- 3
