@@ -108,3 +108,97 @@ plot(likelihood_result[1:l])
 min(diff(likelihood_result[1:l]))>0
 
 
+####test the MM algorithm
+####beta_new = beta_old +4*(t(x)x)^-1%*%t(x)(Y-P)
+n <- 1000
+x1 = rnorm(n,0,1)
+x2 = rnorm(n,0,2)
+p = logit_inver(1+2*x1+4*x2)
+beta_old = c(0,0,0)
+y = rbinom(n,1,p)
+#glm(y~cbind(x1,x2),family=binomial(logit))
+x <- cbind(1,x1,x2)
+time1 = proc.time()
+for(h in 1:1000){
+  n <- 1000
+  x1 = rnorm(n,0,1)
+  x2 = rnorm(n,0,2)
+  p = logit_inver(1+2*x1+4*x2)
+  beta_old = c(0,0,0)
+  y = rbinom(n,1,p)
+  #glm(y~cbind(x1,x2),family=binomial(logit))
+  x <- cbind(1,x1,x2)
+  xx.inver.xt <- solve(t(x)%*%x)%*%t(x)
+  tol = 0.001
+  for(l in 1:1000){
+    #print(beta_old)
+    p_old <- logit_inver(x%*%beta_old)
+    beta_new = beta_old + 4*xx.inver.xt%*%(y-p_old)
+    error = max(abs(beta_new-beta_old))
+    if(error<tol){
+      break
+    }
+    beta_old = beta_new
+  }
+  
+}
+time1 = proc.time()-time1 
+
+#gradient descent
+time2 = proc.time()
+for(h in 1:1000){
+  n <- 1000
+  x1 = rnorm(n,0,1)
+  x2 = rnorm(n,0,2)
+  p = logit_inver(1+2*x1+4*x2)
+  beta_old = c(0,0,0)
+  y = rbinom(n,1,p)
+  #glm(y~cbind(x1,x2),family=binomial(logit))
+  x <- cbind(1,x1,x2)
+  alpha = 1/n
+  tol = 0.001
+  for(l in 1:1000){
+    #print(beta_old)
+    p_old <- logit_inver(x%*%beta_old)
+    beta_new = beta_old + alpha*t(x)%*%(y-p_old)
+    error = max(abs(beta_new-beta_old))
+    if(error<tol){
+      break
+    }
+    beta_old = beta_new
+  }
+  
+}
+time2 = proc.time()-time2
+
+#glm 
+time3 = proc.time()
+for(h in 1:1000){
+  n <- 1000
+  x1 = rnorm(n,0,1)
+  x2 = rnorm(n,0,2)
+  p = logit_inver(1+2*x1+4*x2)
+  beta_old = c(0,0,0)
+  y = rbinom(n,1,p)
+  x <- cbind(1,x1,x2)
+  w = matrix(0,n,n)
+  tol = 0.001
+  for(l in 1:1000){
+   # print(beta_old)
+    p_old <- logit_inver(x%*%beta_old)
+    diag(w) = p_old*(1-p_old)
+    beta_new = beta_old + solve(t(x)%*%w%*%x)%*%t(x)%*%(y-p_old)
+    #beta_new = beta_old + 4*xx.inver.xt%*%(y-p_old)
+    error = max(abs(beta_new-beta_old))
+    if(error<tol){
+      break
+    }
+    beta_old = beta_new
+  }
+  
+ 
+ 
+  
+}
+time3 = proc.time()-time3
+

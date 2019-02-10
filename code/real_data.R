@@ -1,6 +1,6 @@
 library(sas7bdat)
-#setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
-setwd('/spin1/users/zhangh24/mixture_approach')
+setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
+#setwd('/spin1/users/zhangh24/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
 library(data.table)
@@ -38,6 +38,7 @@ N <- rep(0,n.sub)
 for(i in 1:n.sub){
   print(i)
   idx <- which(data$ID==ID[i])
+  cbind(data[idx,]$preg,data[idx,]$method5)
   obs[i] <- max(data[idx,]$preg,na.rm=T)
   N[i] <- max(data[idx,]$method5,na.rm=T)
   
@@ -52,10 +53,13 @@ data.com <- data.com %>% mutate(
   age_diff = abs(Age_m-Age_f)/2
 )
 
-###############take out the first half cycle
+###############start from the first enrollment cycle
+###############so we take n+1 to indicate the enrollment cycle
+###############since the enrollment cycle is coded as 0
 
-idx <- which(data.com$N!=0)
-data.clean <- data.com[idx,]
+#idx <- which(data.com$N!=0)
+data.clean <- data.com
+data.clean$N <- data.com$N+1
 dim(data.clean)
 n.couple <- nrow(data.clean)
 n.cycle <- sum(data.clean$N)

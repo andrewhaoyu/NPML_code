@@ -8,7 +8,7 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = T)
 i1 <- as.numeric(args[[1]])
 library(sas7bdat)
-#setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
+setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
 setwd('/spin1/users/zhangh24/mixture_approach')
 data <- read.sas7bdat('./data/LIFE_DATA/dailycycle.sas7bdat')
 data.baseline <- read.sas7bdat('./data/LIFE_DATA/baseline.sas7bdat')
@@ -193,6 +193,8 @@ save(result,file = paste0("./result/npml_test",i1,".rdata"))
 
 #plot(LikeliResult[1:l])
 
-
-
+#test result load
+setwd('/spin1/users/zhangh24/mixture_approach')
+i1 = 4
+load(paste0("./result/npml_test",i1,".rdata"))
 
