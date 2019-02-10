@@ -50,8 +50,8 @@ data.com <- data.com %>% mutate(
 
 ###############take out the first half cycle
 
-idx <- which(data.com$N!=0)
-data.clean <- data.com[idx,]
+data.clean <- data.com
+data.clean$N <- data.com$N+1
 dim(data.clean)
 n.couple <- nrow(data.clean)
 n.cycle <- sum(data.clean$N)
@@ -71,23 +71,23 @@ for(i in 1:n.couple){
   temp <- temp+data.clean$N[i]
 }
 
-ObsLikfun <- function(y,x,uu_old,beta_old,w){
+ObsLikfun <- function(y,x,uu_old,beta_old,w,obs){
   n <- length(y)
   result <- rep(0,n)
   xb = x%*%beta_old
   for(i in 1:n){
-    result[i] <- log(sum(w*logit_inver(uu_old+xb[i])*(1-logit_inver(uu_old+xb[i]))^(y[i]-1)))
+    result[i] <- log(sum(w*logit_inver(uu_old+xb[i])^obs[i]*(1-logit_inver(uu_old+xb[i]))^(y[i]-obs[i])))
   }
   return(sum(result))
   
 }
 
-ComLikfun <- function(y,x,uu_old,beta_old,ww){
+ComLikfun <- function(y,x,uu_old,beta_old,ww,obs){
   xb = x%*%beta_old
   n <- length(y)
   temp_mat = matrix(0,n,n)
   for(i in 1:n){
-    temp_mat[i,] = (uu_old+xb[i]-y[i]*log(1+exp(uu_old+xb[i])))
+    temp_mat[i,] = ((uu_old+xb[i])*obs[i]-y[i]*log(1+exp(uu_old+xb[i])))
   }
   return(sum(temp_mat*ww))
 }
@@ -95,19 +95,32 @@ ComLikfun <- function(y,x,uu_old,beta_old,ww){
 
 
 
-Mstep <- function(uu,beta,x,y,ww,alpha_x){
-  uu_old <- uu
-  beta_old <- beta
-  step <- 100
+
+Mstep <- function(uu_old,beta_old,x,y,ww,alpha_x,obs){
+  step <- 200
   n <- length(y)
-  alpha <- 1/n
-  tol <- 0.001
+  alpha <- 1/(n*10)
+  tol <- alpha
+  ComLik0 = ComLikfun(y,x,uu_old,beta_old,ww,obs)
+  #Likelihood_old <- Likelihoodfun(y,x,uu_old,beta_old,ww)
   for(l in 1:step){
     
     uu_beta_old <- c(uu_old,beta_old)
     #print(uu_beta_old)
-    uu_new = uu_old+alpha*gr_u_fun(uu_old,y,ww,beta_old,x,n)
-    beta_new <- beta_old+(alpha_x/10)*gr_b_fun(uu_new,y,ww,beta_old,x,n)
+    uu_new = uu_old+alpha*gr_u_fun(uu_old,y,ww,beta_old,x,n,obs)
+    beta_new <- beta_old+(alpha_x/100)*gr_b_fun(uu_new,y,ww,beta_old,x,n,obs)
+    ######test the Likelihood for a few steps
+    if(l%%10==0){
+      ComLik_new = ComLikfun(y,x,uu_new,beta_new,ww,obs)
+      if(ComLik_new>ComLik0){
+        break
+      }else if(ComLik_new<=ComLik0){
+        uu_new = uu_old
+        beta_new = beta_old
+        alpha = alpha/2
+        alpha_x = alpha_x/2
+      }
+    }
     uu_beta_new <- c(uu_new,beta_new)
     error <- max(abs(uu_beta_new-uu_beta_old))
     if(error<tol){
@@ -116,7 +129,7 @@ Mstep <- function(uu,beta,x,y,ww,alpha_x){
     uu_old <- uu_new
     beta_old <- beta_new
   }
-  return(list(uu_new,beta_new))
+  return(list(uu_new,beta_new,l))
 }
 
 
@@ -161,14 +174,16 @@ for(s in 1:length(tl)){
   
   
   LikeliResult <- rep(0,step)
+  StepResult <- rep(0,step)
+  #library(PAV)
   for(l in 1:step){
     uu_beta_old <- c(uu_old,beta_old)
     print(uu_beta_old)
     #print(uu_beta_old)
-    ww = Estep(uu_old,beta_old,x,y,w)
-    LikeliResult[l] <- ObsLikfun(y,x,uu_old,beta_old,w)
+    ww = Estep(uu_old,beta_old,x,y,w,obs)
+    LikeliResult[l] <- ObsLikfun(y,x,uu_old,beta_old,w,obs)
     #rowSums(ww)
-    Mstep_result = Mstep(uu_old,beta_old,x,y,ww,alpha_x)
+    Mstep_result = Mstep(uu_old,beta_old,x,y,ww,alpha_x,obs)
     #Mstep_result = Mstep2(uu_old,beta_old,x,y,ww)
     uu_new = Mstep_result[[1]]
     beta_new = Mstep_result[[2]]
@@ -194,7 +209,7 @@ save(result,file = paste0("./result/npml_test",i1,".rdata"))
 #plot(LikeliResult[1:l])
 
 #test result load
-setwd('/spin1/users/zhangh24/mixture_approach')
-i1 = 4
-load(paste0("./result/npml_test",i1,".rdata"))
-
+# setwd('/spin1/users/zhangh24/mixture_approach')
+# i1 = 4
+# load(paste0("./result/npml_test",i1,".rdata"))
+# 

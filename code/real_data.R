@@ -129,18 +129,17 @@ for(s in 1:length(tl)){
     }
   }
   
-  
-  
-  
   LikeliResult <- rep(0,step)
+  StepResult <- rep(0,step)
+  #library(PAV)
   for(l in 1:step){
     uu_beta_old <- c(uu_old,beta_old)
     print(uu_beta_old)
     #print(uu_beta_old)
-    ww = Estep(uu_old,beta_old,x,y,w)
-    LikeliResult[l] <- ObsLikfun(y,x,uu_old,beta_old,w)
+    ww = Estep(uu_old,beta_old,x,y,w,obs)
+    LikeliResult[l] <- ObsLikfun(y,x,uu_old,beta_old,w,obs)
     #rowSums(ww)
-    Mstep_result = Mstep(uu_old,beta_old,x,y,ww,alpha_x)
+    Mstep_result = Mstep(uu_old,beta_old,x,y,ww,alpha_x,obs)
     #Mstep_result = Mstep2(uu_old,beta_old,x,y,ww)
     uu_new = Mstep_result[[1]]
     beta_new = Mstep_result[[2]]
@@ -154,14 +153,11 @@ for(s in 1:length(tl)){
     beta_old <- beta_new
     w = colSums(ww)/sum(ww)
   }
-  max_likelihood[s] <-   LikeliResult[l]
-  beta_result[s,] <- beta_new
-  mu_result[s] <- crossprod(uu_new,w)
-  max_step[s] = l
+  plot(LikeliResult[1:l])
 }
+  
+  
 
-
-plot(LikeliResult[1:l])
 
 Mstep <- function(uu,beta,x,y,ww,alpha_x){
   uu_old <- uu
