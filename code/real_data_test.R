@@ -158,8 +158,8 @@ for(s in 1:length(tl)){
   #              max(log((1/y_sm)/(1-1/y_sm))),
   #              (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
   #uu_old = log((1/y_sm)/(1-1/y_sm))
-  uu_old = rnorm(n,0,4)
-  beta_old = summary(model.logistic)$coefficients[2:3,1]
+  uu_old = rnorm(n,0,6)
+  beta_old = rnorm(2,0,1)
   tol = 1e-04
   n = length(y)
   w = rep(1/n,n)
@@ -211,7 +211,22 @@ save(result,file = paste0("./result/npml_test",i1,".rdata"))
 #plot(LikeliResult[1:l])
 
 #test result load
-# setwd('/spin1/users/zhangh24/mixture_approach')
-# i1 = 1
-# load(paste0("./result/npml_test",i1,".rdata"))
+setwd('/spin1/users/zhangh24/mixture_approach')
+n <- 1000
 
+likelihood_result <- rep(n,0)
+beta_result <- matrix(0,n,0.5)
+mu_result = rep(n,0)
+steps = rep(n,0)
+for(i1 in 1:n){
+  load(paste0("./result/npml_test",i1,".rdata"))
+  likelihood_result[i1] <- result[[1]]
+  beta_result[i1,] <- result[[2]]
+  mu_result[i1] = result[[3]]
+  steps[i1] = result[[4]]
+  
+}
+idx <- which.max(likelihood_result)
+mu_result[idx]
+beta_result[idx,]
+steps[idx]
