@@ -152,14 +152,14 @@ for(s in 1:length(tl)){
   x=cbind(data.clean$age_average,data.clean$age_diff);
   x <- as.matrix(x)
   step = 5000
-  y_sm = y
-  y_sm[y_sm==1] = y_sm[y_sm==1] + tl[s]
+  # y_sm = y
+  # y_sm[y_sm==1] = y_sm[y_sm==1] + tl[s]
   # uu_old = seq(min(log((1/y_sm)/(1-1/y_sm))),
   #              max(log((1/y_sm)/(1-1/y_sm))),
   #              (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
   #uu_old = log((1/y_sm)/(1-1/y_sm))
-  uu_old = rnorm(n,0,9)
-  beta_old = rnorm(2,-0.1,0.2)
+  uu_old = rnorm(n,0,10)
+  beta_old = rnorm(2,0,0.2)
   tol = 1e-04
   n = length(y)
   w = rep(1/n,n)
