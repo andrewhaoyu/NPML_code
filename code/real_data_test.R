@@ -145,6 +145,7 @@ beta_result <- matrix(0,length(tl),2)
 mu_result <- matrix(0,length(tl),1)
 max_step <- rep(0,length(tl))
 #try different starting point
+set.seed(i1)
 for(s in 1:length(tl)){
   n <- nrow(data.clean)
   y=data.clean$N;
@@ -153,10 +154,11 @@ for(s in 1:length(tl)){
   step = 5000
   y_sm = y
   y_sm[y_sm==1] = y_sm[y_sm==1] + tl[s]
-  uu_old = seq(min(log((1/y_sm)/(1-1/y_sm))),
-               max(log((1/y_sm)/(1-1/y_sm))),
-               (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
+  # uu_old = seq(min(log((1/y_sm)/(1-1/y_sm))),
+  #              max(log((1/y_sm)/(1-1/y_sm))),
+  #              (max(log((1/y_sm)/(1-1/y_sm)))-min(log((1/y_sm)/(1-1/y_sm))))/(n-1))
   #uu_old = log((1/y_sm)/(1-1/y_sm))
+  uu_old = rnorm(n,0,4)
   beta_old = summary(model.logistic)$coefficients[2:3,1]
   tol = 1e-04
   n = length(y)
@@ -210,6 +212,6 @@ save(result,file = paste0("./result/npml_test",i1,".rdata"))
 
 #test result load
 # setwd('/spin1/users/zhangh24/mixture_approach')
-# i1 = 4
+# i1 = 1
 # load(paste0("./result/npml_test",i1,".rdata"))
-# 
+
