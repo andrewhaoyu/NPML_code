@@ -97,7 +97,7 @@ beta_old <- start[[2]]
 set.seed(i1)
 Rboot <- 5
 NPMLEst_boot <- rep(0,Rboot)
-
+library(PAV)
 for(i in 1:Rboot){
   print(i)
   ind <- sample(c(1:length(y)),length(y),replace = T)
