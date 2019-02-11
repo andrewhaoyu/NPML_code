@@ -104,7 +104,7 @@ for(i in 1:Rboot){
   obs_boot <- obs[ind]
   x_boot <- x[ind,]
   result <- NPMLLogFun(y_boot,x_boot,obs_boot,uu_old,beta_old)
-  NPMLEst_boot[i] <- crossprod(uu_new,beta_new)
+  NPMLEst_boot[i] <- crossprod(result[[1]],result[[2]])
 }
 
 save(NPMLEst_boot,file=paste0("./result/real_data_logistic_NPML_boot",i1,".Rdata"))
