@@ -1,11 +1,11 @@
 #------------------------------------------------------------------
-# Goal: real data analysis results adjusting covariates
+# Goal: real data analysis results NPML adjusting any covariates boot
 # Author: Haoyu Zhang
 #-------------------------------------------------------------------
 #---------------------------------------#---------------------------------------
-# rm(list=ls())
-# args <- commandArgs(trailingOnly = T)
-# i1 <- as.numeric(args[[1]])
+rm(list=ls())
+args <- commandArgs(trailingOnly = T)
+i1 <- as.numeric(args[[1]])
 library(sas7bdat)
 #setwd('/Users/zhangh24/GoogleDrive/project/Tom/mixture_approach_estimate_population_value/mixture_approach')
 setwd('/spin1/users/zhangh24/mixture_approach')
@@ -90,34 +90,30 @@ for(i in 1:n.couple){
 
 
 
+load("./result/start.Rdata")
+uu_old <- start[[1]]
+beta_old <- start[[2]]
+set.seed(i1)
+Rboot <- 5
+NPMLEst_boot <- rep(0,Rboot)
 
-###############logistic regression adjusting for age average and age difference
-model.logistic <- glm(Y~age_averge.cycle+age_diff.cycle)
-summary(model.logistic)
-confint(model.logistic)
-##############mixed effect logistic regression allowing for sample difference
-library(lme4)
-model.mix.logistic <- glmer(Y~(1|ID.cycle)+age_averge.cycle+age_diff.cycle,family = binomial)
-summary(model.mix.logistic)
-confint(model.mix.logistic)
-#############NPML model
-# uu0 = seq(summary(model.logistic)$coefficients[1,1]-5,
-#           summary(model.logistic)$coefficients[1,1]+5,
-#           10/(n-1))
-#   
-# beta0 = summary(model.logistic)$coefficients[2:3,1]
-#model.NPMLlog <- NPMLLogFun(y=data.clean$N,x=cbind(data.clean$age_average,data.clean$age_diff),uu0,beta0)
-set.seed(877)
-n <- nrow(data.clean)
-uu_old = rnorm(n,0,9)
-beta_old = rnorm(2,-0.1,0.2)
-result <- NPMLLogFun(y,x,obs,uu_old,beta_old)
-uu_new <- result[[1]]
-w_new <- result[[2]]
-beta_new <- result[[3]]
-crossprod(uu_new,w_new)
-start = list(uu_new,beta_new)
-save(start,file = "./result/start.Rdata")
+for(i in 1:Rboot){
+  print(i)
+  ind <- sample(c(1:length(y)),length(y),replace = T)
+  y_boot <- y[ind]
+  obs_boot <- obs[ind]
+  x_boot <- x[ind,]
+  result <- NPMLLogFun(y_boot,x_boot,obs_boot,uu_old,beta_old)
+  NPMLEst_boot[i] <- crossprod(uu_new,beta_new)
+}
+
+save(NPMLEst_boot,file=paste0("./result/real_data_logistic_NPML_boot",i1,".Rdata"))
+# uu_new <- result[[1]]
+# w_new <- result[[2]]
+# beta_new <- result[[3]]
+# crossprod(uu_new,w_new)
+# start = list(uu_new,beta_new)
+# save(start,file = )
 
 # uu_old <- uu_new
 # beta_old <- beta_new

@@ -75,8 +75,18 @@ for(i in 1:Rboot){
 
 save(NPMLEst_boot,file=paste0("./result/real_data_NPML_boot",i1,".Rdata"))
 
-
-
+n <- 1000
+Rboot <- 5
+NPMLEst_boot_result <- rep(0,n*Rboot)
+######load results
+temp = 0
+for(i1 in 1:1000){
+print(i1)
+    load(paste0("./result/real_data_NPML_boot",i1,".Rdata"))
+  NPMLEst_boot_result[temp+(1:length(NPMLEst_boot))] <- NPMLEst_boot
+  temp = temp+length(NPMLEst_boot)
+}
+quantile(NPMLEst_boot_result,c(0.025,0.975))
 
 
 

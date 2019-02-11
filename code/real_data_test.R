@@ -211,23 +211,23 @@ save(result,file = paste0("./result/npml_test",i1,".rdata"))
 #plot(LikeliResult[1:l])
 
 #test result load
-# setwd('/spin1/users/zhangh24/mixture_approach')
-# n <- 1000
-# 
-# likelihood_result <- rep(n,0)
-# beta_result <- matrix(0,n,2)
-# mu_result = rep(n,0)
-# steps = rep(n,0)
-# for(i1 in 1:n){
-#   load(paste0("./result/npml_test",i1,".rdata"))
-#   likelihood_result[i1] <- result[[1]]
-#   beta_result[i1,] <- result[[2]]
-#   mu_result[i1] = result[[3]]
-#   steps[i1] = result[[4]]
-# 
-# }
-# idx <- which.max(likelihood_result)
-# likelihood_result[idx]
-# mu_result[idx]
-# beta_result[idx,]
-# steps[idx]
+setwd('/spin1/users/zhangh24/mixture_approach')
+n <- 1000
+
+likelihood_result <- rep(n,0)
+beta_result <- matrix(0,n,2)
+mu_result = rep(n,0)
+steps = rep(n,0)
+for(i1 in 1:n){
+  load(paste0("./result/npml_test",i1,".rdata"))
+  likelihood_result[i1] <- result[[1]]
+  beta_result[i1,] <- result[[2]]
+  mu_result[i1] = result[[3]]
+  steps[i1] = result[[4]]
+
+}
+idx <- which.max(likelihood_result)
+likelihood_result[idx]
+mu_result[idx]
+beta_result[idx,]
+steps[idx]
