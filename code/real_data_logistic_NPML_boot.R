@@ -69,6 +69,7 @@ data.com <- data.com %>% mutate(
 data.clean <- data.com
 data.clean$N <- data.com$N+1
 y <- data.clean$N
+x <- cbind(data.clean$age_average,data.clean$age_diff)
 dim(data.clean)
 n.couple <- nrow(data.clean)
 n.cycle <- sum(data.clean$N)
