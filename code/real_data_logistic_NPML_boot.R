@@ -95,6 +95,7 @@ load("./result/start.Rdata")
 uu_old <- start[[1]]
 beta_old <- start[[2]]
 set.seed(i1)
+time =proc.time()
 Rboot <- 1
 NPMLEst_boot <- rep(0,Rboot)
 library(PAV)
@@ -110,7 +111,7 @@ for(i in 1:Rboot){
   #try the best start point for each bootstrap
   uu_try <- uu_old
   beta_try <- beta_old
-  for(j in 1:100){
+  for(j in 1:10){
     print(j)
     for(k in 1:n){
       uu_try[k] <- rnorm(1,uu_old[k],0.5)
@@ -127,7 +128,7 @@ for(i in 1:Rboot){
   }
   NPMLEst_boot[i] <- crossprod(result[[1]],result[[2]])
 }
-
+time = proc.time() - time
 save(NPMLEst_boot,file=paste0("./result/real_data_logistic_NPML_boot",i1,".Rdata"))
 
 # n <- 1000
