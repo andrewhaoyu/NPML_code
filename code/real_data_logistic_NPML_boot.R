@@ -89,13 +89,13 @@ for(i in 1:n.couple){
   temp <- temp+data.clean$N[i]
 }
 
-
+n <- nrow(data.clean)
 
 load("./result/start.Rdata")
 uu_old <- start[[1]]
 beta_old <- start[[2]]
 set.seed(i1)
-Rboot <- 5
+Rboot <- 1
 NPMLEst_boot <- rep(0,Rboot)
 library(PAV)
 for(i in 1:Rboot){
@@ -104,11 +104,47 @@ for(i in 1:Rboot){
   y_boot <- y[ind]
   obs_boot <- obs[ind]
   x_boot <- x[ind,]
+  
   result <- NPMLLogFun(y_boot,x_boot,obs_boot,uu_old,beta_old)
+  lih_temp <- result[[4]]
+  #try the best start point for each bootstrap
+  uu_try <- uu_old
+  beta_try <- beta_old
+  for(j in 1:100){
+    print(j)
+    for(k in 1:n){
+      uu_try[k] <- rnorm(1,uu_old[k],0.5)
+    }
+    for(k in 1:2){
+      beta_try[k] <- rnorm(1,beta_old[k],0.1)
+    }
+    result_try <-  NPMLLogFun(y_boot,x_boot,obs_boot,uu_try,beta_try)
+    if(Lih_temp<=result_try[[4]]){
+      result<- result_try
+      uu_old <- uu_try
+      beta_old <- beta_try
+    }
+  }
   NPMLEst_boot[i] <- crossprod(result[[1]],result[[2]])
 }
 
 save(NPMLEst_boot,file=paste0("./result/real_data_logistic_NPML_boot",i1,".Rdata"))
+
+# n <- 1000
+# Rboot <- 5
+# NPMLEst_boot_result <- rep(0,(n-1)*Rboot)
+# ######load results
+# temp = 0
+# for(i1 in c(1:829,831:1000)){
+#   print(i1)
+#   load(paste0("./result/real_data_logistic_NPML_boot",i1,".Rdata"))
+#   NPMLEst_boot_result[temp+(1:length(NPMLEst_boot))] <- NPMLEst_boot
+#   temp = temp+length(NPMLEst_boot)
+# }
+# quantile(NPMLEst_boot_result,c(0.025,0.975))
+
+
+
 # uu_new <- result[[1]]
 # w_new <- result[[2]]
 # beta_new <- result[[3]]
