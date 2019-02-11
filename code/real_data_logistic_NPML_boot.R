@@ -119,7 +119,7 @@ for(i in 1:Rboot){
       beta_try[k] <- rnorm(1,beta_old[k],0.1)
     }
     result_try <-  NPMLLogFun(y_boot,x_boot,obs_boot,uu_try,beta_try)
-    if(Lih_temp<=result_try[[4]]){
+    if(lih_temp<=result_try[[4]]){
       result<- result_try
       uu_old <- uu_try
       beta_old <- beta_try
