@@ -111,7 +111,7 @@ for(i in 1:Rboot){
   #try the best start point for each bootstrap
   uu_try <- uu_old
   beta_try <- beta_old
-  for(j in 1:10){
+  for(j in 1:20){
     print(j)
     for(k in 1:n){
       uu_try[k] <- rnorm(1,uu_old[k],0.5)
@@ -132,11 +132,11 @@ time = proc.time() - time
 save(NPMLEst_boot,file=paste0("./result/real_data_logistic_NPML_boot",i1,".Rdata"))
 
 # n <- 1000
-# Rboot <- 5
+# Rboot <- 1
 # NPMLEst_boot_result <- rep(0,(n-1)*Rboot)
 # ######load results
 # temp = 0
-# for(i1 in c(1:829,831:1000)){
+# for(i1 in c(1:1000)){
 #   print(i1)
 #   load(paste0("./result/real_data_logistic_NPML_boot",i1,".Rdata"))
 #   NPMLEst_boot_result[temp+(1:length(NPMLEst_boot))] <- NPMLEst_boot
